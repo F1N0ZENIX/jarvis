@@ -35,7 +35,7 @@ object SchoolChecker {
     try {
      if(conn.responseCode!=200)error("HTTP "+conn.responseCode)
      val html=conn.inputStream.bufferedReader().use { it.readText() }
-     val cards=Regex("""<div class="wanted-poster" data-deadline="([^"]+)"[^>]*>(.*?)</div>\\s*</div>""",RegexOption.DOT_MATCHES_ALL)
+     val cards=Regex("""<div class="wanted-poster" data-deadline="([^"]+)"[^>]*>(.*?)(?=<div class="wanted-poster"|</section>|</main>|<!--)""",RegexOption.DOT_MATCHES_ALL)
      val title=Regex("""<div class="subject-name">([^<]+)</div>""")
      val subject=Regex("""<div class="subject-teacher">([^<]+)</div>""")
      val description=Regex("""<div class="wanted-desc">([^<]+)</div>""")
