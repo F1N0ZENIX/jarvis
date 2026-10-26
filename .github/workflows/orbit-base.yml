@@ -1,0 +1,55 @@
+name: JARVIS - Orbit base experimental
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/orbit-base.yml'
+permissions:
+  contents: read
+jobs:
+  orbit-base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Orbit source (MPL-2.0)
+        uses: actions/checkout@v4
+        with:
+          repository: lpnovi/Orbit-Assistant
+          ref: main
+          path: orbit
+          persist-credentials: false
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;35.0.0" "platform-tools"
+      - name: Brand experimental JARVIS APK
+        working-directory: orbit
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("app/build.gradle")
+          s=p.read_text().replace("applicationId 'com.orbit.assistant'", "applicationId 'com.f1n0zenix.jarvis.orbit'")
+          p.write_text(s)
+          p=Path("app/src/main/res/values/strings.xml")
+          s=p.read_text().replace('<string name="app_name">Orbit Assistant</string>','<string name="app_name">JARVIS (Orbit Base)</string>')
+          p.write_text(s)
+          PY
+          chmod +x gradlew
+      - name: Compile Orbit-based JARVIS
+        working-directory: orbit
+        run: ./gradlew --no-daemon :app:assembleDebug
+      - name: Preserve MPL attribution
+        run: |
+          mkdir -p output
+          cp orbit/app/build/outputs/apk/debug/app-debug.apk "output/JARVIS-Orbit-Base-experimental.apk"
+          cp orbit/LICENSE output/ORBIT-LICENSE.txt
+      - name: Upload experimental APK and license
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Orbit-Base-experimental
+          path: output/
+          if-no-files-found: error
