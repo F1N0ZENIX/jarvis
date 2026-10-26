@@ -30,7 +30,7 @@ class ChatActivity:Activity() {
  }
  private fun bubble(role:String,content:String) {
   val t=TextView(this).apply {
-   text=content;textColor(if(role=="user") Color.BLACK else Color.WHITE)
+   text=content;setTextColor(if(role=="user") Color.BLACK else Color.WHITE)
    textSize=16f;setPadding(20,14,20,14)
    background=android.graphics.drawable.GradientDrawable().apply { setColor(if(role=="user") Color.WHITE else 0xFF252525.toInt());cornerRadius=22f }
   }
