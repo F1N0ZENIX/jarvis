@@ -141,6 +141,16 @@ class ChatActivity:Activity() {
   }
  }
  override fun onDestroy() { speaker?.stop();speaker?.shutdown();super.onDestroy() }
+ private fun handleSchool(message:String):Boolean {
+  val lower=message.lowercase(java.util.Locale("pt","BR"))
+  if(!lower.contains("minha sala") && !lower.contains("minha-sala")) return false
+  SchoolChecker.check(this) { result -> runOnUiThread {
+   val reply=result.getOrElse { "Não foi possível consultar o Minha Sala: "+it.message }
+   store.add("assistant",reply)
+   bubble("assistant",reply)
+  } }
+  return true
+ }
  private fun handleReminder(message:String):Boolean {
   val lower=message.lowercase(java.util.Locale("pt","BR"))
   if(!Regex("""\b(lembrete|lembre|marque|agende|agendar|compromisso)\b""").containsMatchIn(lower)) return false
@@ -193,6 +203,7 @@ class ChatActivity:Activity() {
  }
  private fun submit() {
   val message=input.text.toString().trim();if(message.isEmpty())return
+  if(handleSchool(message)) { input.setText("");store.add("user",message);bubble("user",message);return }
   if(handleReminder(message)) { input.setText("");store.add("user",message);bubble("user",message);return }
   val key=getSharedPreferences("groq",MODE_PRIVATE).getString("api_key","").orEmpty()
   if(key.isBlank()) { Toast.makeText(this,"Configure a chave Groq nas configurações ⚙",Toast.LENGTH_LONG).show();return }
