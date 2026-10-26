@@ -25,4 +25,37 @@ object SchoolChecker {
    } catch(e:Exception) { done(Result.failure(e)) }
   }.start()
  }
+
+ fun upcoming(done:(Result<String>)->Unit) {
+  Thread {
+   try {
+    val conn=URL("https://raw.githubusercontent.com/F1N0ZENIX/minha-sala/main/index.html").openConnection() as HttpURLConnection
+    conn.connectTimeout=12000
+    conn.readTimeout=12000
+    try {
+     if(conn.responseCode!=200)error("HTTP "+conn.responseCode)
+     val html=conn.inputStream.bufferedReader().use { it.readText() }
+     val cards=Regex("""<div class="wanted-poster" data-deadline="([^"]+)"[^>]*>(.*?)</div>\\s*</div>""",RegexOption.DOT_MATCHES_ALL)
+     val title=Regex("""<div class="subject-name">([^<]+)</div>""")
+     val subject=Regex("""<div class="subject-teacher">([^<]+)</div>""")
+     val description=Regex("""<div class="wanted-desc">([^<]+)</div>""")
+     val dateFormat=java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss",java.util.Locale.ROOT)
+     val output=cards.findAll(html).mapNotNull { card ->
+      val date=runCatching { dateFormat.parse(card.groupValues[1]) }.getOrNull()?:return@mapNotNull null
+      if(date.time<System.currentTimeMillis())return@mapNotNull null
+      val name=title.find(card.value)?.groupValues?.get(1)?:return@mapNotNull null
+      val subjectName=subject.find(card.value)?.groupValues?.get(1).orEmpty()
+      val detail=description.find(card.value)?.groupValues?.get(1).orEmpty()
+      Triple(date.time,name,"$subjectName — $detail")
+     }.sortedBy { it.first }.take(12).toList()
+     val formatted=java.text.SimpleDateFormat("dd/MM",java.util.Locale("pt","BR"))
+     val answer=if(output.isEmpty())"Não encontrei atividades futuras no Minha Sala."
+      else "Próximas atividades do Minha Sala:\\n"+output.joinToString("\\n") {
+       "• "+formatted.format(java.util.Date(it.first))+" — "+it.second+" ("+it.third+")"
+      }
+     done(Result.success(answer.replace("\\\\n","\\n")))
+    } finally { conn.disconnect() }
+   }catch(e:Exception){done(Result.failure(e))}
+  }.start()
+ }
 }
