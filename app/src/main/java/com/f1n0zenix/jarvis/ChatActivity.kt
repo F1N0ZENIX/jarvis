@@ -143,12 +143,17 @@ class ChatActivity:Activity() {
  override fun onDestroy() { speaker?.stop();speaker?.shutdown();super.onDestroy() }
  private fun handleSchool(message:String):Boolean {
   val lower=message.lowercase(java.util.Locale("pt","BR"))
-  if(!lower.contains("minha sala") && !lower.contains("minha-sala")) return false
-  SchoolChecker.check(this) { result -> runOnUiThread {
-   val reply=result.getOrElse { "Não foi possível consultar o Minha Sala: "+it.message }
+  val school=lower.contains("minha sala")||lower.contains("minha-sala")||
+   (lower.contains("atividade")||lower.contains("trabalho")||lower.contains("prazo")) &&
+   store.history(8).any { it.second.lowercase(java.util.Locale("pt","BR")).contains("minha sala") }
+  if(!school)return false
+  val isUpdate=lower.contains("atualiza")||lower.contains("verifique")||lower.contains("verificar")||lower.contains("mudou")
+  val callback:(Result<String>)->Unit={ result ->runOnUiThread {
+   val reply=result.getOrElse { "Não consegui consultar o Minha Sala: "+it.message }
    store.add("assistant",reply)
    bubble("assistant",reply)
   } }
+  if(isUpdate)SchoolChecker.check(this,callback) else SchoolChecker.upcoming(callback)
   return true
  }
  private fun handleReminder(message:String):Boolean {
