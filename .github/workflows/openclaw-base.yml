@@ -25,7 +25,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24.22.1'
           cache: pnpm
           cache-dependency-path: openclaw/pnpm-lock.yaml
       - uses: actions/setup-java@v4
