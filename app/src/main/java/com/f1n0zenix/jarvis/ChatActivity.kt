@@ -4,11 +4,11 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Bundle
+import android.os.Bundle\nimport android.speech.RecognizerIntent\nimport android.speech.tts.TextToSpeech\nimport java.util.Locale
 import android.view.Gravity
 import android.view.View
 import android.widget.*
-class ChatActivity:Activity() {
+class ChatActivity:Activity() {\n private var speaker:TextToSpeech?=null\n private var speakAnswers=false
  private lateinit var log:LinearLayout
  private lateinit var scroll:ScrollView
  private lateinit var send:TextView
@@ -27,11 +27,15 @@ class ChatActivity:Activity() {
   super.onCreate(savedInstanceState)
   window.statusBarColor=surface;window.navigationBarColor=backdrop
   window.decorView.systemUiVisibility=if(dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-  store=ChatStore(this)
+  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)\n  window.decorView.setOnApplyWindowInsetsListener { view,insets -> view.setPadding(0,insets.systemWindowInsetTop,0,insets.systemWindowInsetBottom);insets }
+  store=ChatStore(this)\n  speaker=TextToSpeech(this) { status -> if(status==TextToSpeech.SUCCESS)speaker?.language=Locale("pt","BR") }
   val root=LinearLayout(this).apply { orientation=1;setBackgroundColor(backdrop) }
   val header=LinearLayout(this).apply { orientation=0;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(22),dp(14),dp(18),dp(14));setBackgroundColor(surface) }
   header.addView(label("JARVIS",24f).apply { typeface=Typeface.DEFAULT_BOLD },LinearLayout.LayoutParams(0,-2,1f))
+  val voice=label("🎙",24f,blue).apply { gravity=Gravity.CENTER;setOnClickListener { startVoiceInput() } }
+  header.addView(voice,LinearLayout.LayoutParams(dp(48),dp(48)))
+  val audio=label("♫",24f,blue).apply { gravity=Gravity.CENTER;setOnClickListener { speakAnswers=!speakAnswers;Toast.makeText(this@ChatActivity,if(speakAnswers)"Leitura de respostas ativada" else "Leitura de respostas desativada",Toast.LENGTH_SHORT).show() } }
+  header.addView(audio,LinearLayout.LayoutParams(dp(48),dp(48)))
   val settings=label("⚙",27f,blue).apply { gravity=Gravity.CENTER;background=shape(if(dark) 0xFF292929.toInt() else 0xFFEDF4FF.toInt(),28);setOnClickListener { startActivity(Intent(this@ChatActivity,MainActivity::class.java)) } }
   header.addView(settings,LinearLayout.LayoutParams(dp(48),dp(48)))
   root.addView(header)
@@ -74,6 +78,24 @@ class ChatActivity:Activity() {
   log.addView(t,LinearLayout.LayoutParams(-2,-2).apply { gravity=if(role=="user") Gravity.END else Gravity.START;setMargins(dp(5),dp(6),dp(5),dp(10)) })
   scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
  }
+ private fun startVoiceInput() {
+  try {
+   val intent=Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+    putExtra(RecognizerIntent.EXTRA_LANGUAGE,"pt-BR")
+    putExtra(RecognizerIntent.EXTRA_PROMPT,"Fale com o JARVIS")
+   }
+   startActivityForResult(intent,201)
+  } catch(e:Exception) { Toast.makeText(this,"Reconhecimento de voz indisponível neste dispositivo",Toast.LENGTH_LONG).show() }
+ }
+ override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?) {
+  super.onActivityResult(requestCode,resultCode,data)
+  if(requestCode==201&&resultCode==RESULT_OK) {
+   val spoken=data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+   if(!spoken.isNullOrBlank()) { input.setText(spoken);input.setSelection(input.length()) }
+  }
+ }
+ override fun onDestroy() { speaker?.stop();speaker?.shutdown();super.onDestroy() }
  private fun submit() {
   val message=input.text.toString().trim();if(message.isEmpty())return
   val key=getSharedPreferences("groq",MODE_PRIVATE).getString("api_key","").orEmpty()
@@ -82,7 +104,7 @@ class ChatActivity:Activity() {
   input.setText("");send.isEnabled=false;store.add("user",message);bubble("user",message)
   AssistantClient.ask(key,store.history(30)) { result -> runOnUiThread {
    send.isEnabled=true
-   result.onSuccess { store.add("assistant",it);bubble("assistant",it) }
+   result.onSuccess { store.add("assistant",it);bubble("assistant",it);if(speakAnswers)speaker?.speak(it,TextToSpeech.QUEUE_FLUSH,null,"jarvis") }
     .onFailure { Toast.makeText(this,"Erro na IA: "+it.message,Toast.LENGTH_LONG).show() }
   } }
  }
