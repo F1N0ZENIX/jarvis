@@ -28,7 +28,8 @@ class WakeWordService : Service(), RecognitionListener {
    .setContentText("Diga Jarvis. Toque em Parar para desligar.")
    .addAction(Notification.Action.Builder(null, "Parar", stop).build())
    .build()
-  startForeground(501, notification)
+  if(Build.VERSION.SDK_INT >= 29) startForeground(501, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+  else startForeground(501, notification)
   listening = true
   handler.post { listen() }
   return START_NOT_STICKY
