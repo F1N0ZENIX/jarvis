@@ -1,6 +1,6 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
 android { namespace = "com.f1n0zenix.jarvis"; compileSdk = 35
- defaultConfig { applicationId = "com.f1n0zenix.jarvis"; minSdk = 26; targetSdk = 35; versionCode = 12; versionName = "0.9.3" }
+ defaultConfig { applicationId = "com.f1n0zenix.jarvis"; minSdk = 26; targetSdk = 35; versionCode = 13; versionName = "0.9.4" }
  signingConfigs {
   create("jarvis") {
    val path=System.getenv("JARVIS_KEYSTORE_PATH")
