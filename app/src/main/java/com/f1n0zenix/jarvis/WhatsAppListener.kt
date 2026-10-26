@@ -4,6 +4,7 @@ import android.content.Intent
 import android.service.notification.*
 class WhatsAppListener:NotificationListenerService() {
  override fun onNotificationPosted(s:StatusBarNotification) {
+  if(!getSharedPreferences("settings",MODE_PRIVATE).getBoolean("notifications_enabled",true)) return
   if(s.packageName!="com.whatsapp"&&s.packageName!="com.whatsapp.w4b") return
   val n=s.notification
   val name=n.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?:return

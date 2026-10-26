@@ -15,7 +15,7 @@ class ChatActivity:Activity() {
   super.onCreate(savedInstanceState)
   store=ChatStore(this)
   val root=LinearLayout(this).apply { orientation=1;setPadding(18,28,18,18);setBackgroundColor(Color.BLACK) }
-  root.addView(TextView(this).apply { text="JARVIS  /  CHAT";textColor=Color.WHITE;textSize=26f;typeface=Typeface.DEFAULT_BOLD;setPadding(4,4,4,22) })
+  root.addView(TextView(this).apply { text="JARVIS  /  CHAT";setTextColor(Color.WHITE);textSize=26f;typeface=Typeface.DEFAULT_BOLD;setPadding(4,4,4,22) })
   scroll=ScrollView(this)
   log=LinearLayout(this).apply { orientation=1 }
   scroll.addView(log)
