@@ -12,6 +12,7 @@ import java.util.*
 
 class AgendaActivity : Activity() {
  private val events by lazy { AgendaStore(this) }
+ private val shownMonth=Calendar.getInstance()
  private val formatter = SimpleDateFormat("EEE, dd 'de' MMM • HH:mm", Locale("pt","BR"))
  private fun dp(n:Int) = (n*resources.displayMetrics.density).toInt()
  private fun rounded(color:Int, radius:Int=20) = GradientDrawable().apply {
@@ -42,7 +43,37 @@ class AgendaActivity : Activity() {
   root.addView(text("Organize seus compromissos e lembretes",14f,muted))
   root.addView(gap(24))
   root.addView(button("+ Novo compromisso") { editEvent() },LinearLayout.LayoutParams(-1,dp(54)))
-  root.addView(gap(26))
+  root.addView(gap(16))
+  val quick=EditText(this).apply {
+   hint="Ex.: prova amanhã às 8h"
+   setHintTextColor(muted);setTextColor(white)
+   setPadding(dp(14),dp(10),dp(14),dp(10));background=rounded(panel)
+   setSingleLine(true)
+  }
+  root.addView(quick)
+  root.addView(gap(8))
+  root.addView(button("Criar lembrete por texto") {
+   val parsed=NaturalReminder.parse(quick.text.toString())
+   if(parsed==null) Toast.makeText(this,"Use: tarefa amanhã às 8h, hoje às 15h ou dia 29/10 às 14h",Toast.LENGTH_LONG).show()
+   else editEvent(null,parsed.first,parsed.second)
+  })
+  root.addView(gap(20))
+  val nav=LinearLayout(this).apply { gravity=Gravity.CENTER_VERTICAL }
+  nav.addView(text("‹",32f,accent).apply { setPadding(dp(10),0,dp(16),0);setOnClickListener { shownMonth.add(Calendar.MONTH,-1);showAgenda() } })
+  nav.addView(text(SimpleDateFormat("MMMM yyyy",Locale("pt","BR")).format(shownMonth.time).replaceFirstChar { it.uppercase() },19f,white,true),LinearLayout.LayoutParams(0,-2,1f))
+  nav.addView(text("›",32f,accent).apply { setPadding(dp(16),0,dp(10),0);setOnClickListener { shownMonth.add(Calendar.MONTH,1);showAgenda() } })
+  root.addView(nav)
+  val calendar=CalendarView(this).apply {
+   date=shownMonth.timeInMillis
+   minDate=Calendar.getInstance().apply { add(Calendar.YEAR,-3) }.timeInMillis
+   maxDate=Calendar.getInstance().apply { add(Calendar.YEAR,5) }.timeInMillis
+   setOnDateChangeListener { _,year,month,day ->
+    val picked=Calendar.getInstance().apply { set(year,month,day,9,0);set(Calendar.SECOND,0) }
+    editEvent(null,"",picked.timeInMillis)
+   }
+  }
+  root.addView(calendar,LinearLayout.LayoutParams(-1,dp(310)))
+  root.addView(gap(18))
   val list=events.all().sortedBy { it.start }
   root.addView(text("PRÓXIMOS",13f,accent,true))
   root.addView(gap(12))
@@ -62,16 +93,17 @@ class AgendaActivity : Activity() {
    card.addView(gap(4))
    val repeat=when(e.everyDays) { 1->"Diariamente";7->"Semanalmente";14->"A cada 14 dias";30->"A cada 30 dias";else->"Não se repete" }
    card.addView(text("$repeat • Aviso: ${e.beforeDays} dia(s) antes",13f,muted))
+   card.setOnClickListener { editEvent(e) }
    root.addView(card)
    root.addView(gap(12))
   }
   setContentView(ScrollView(this).apply { isFillViewport=true;addView(root) })
  }
- private fun editEvent() {
+ private fun editEvent(existing:AgendaStore.Event?=null,prefill:String="",whenMillis:Long?=null) {
   val now=Calendar.getInstance().apply { add(Calendar.HOUR_OF_DAY,1) }
-  val selected=Calendar.getInstance().apply { timeInMillis=now.timeInMillis }
+  val selected=Calendar.getInstance().apply { timeInMillis=existing?.start ?: whenMillis ?: now.timeInMillis }
   val layout=LinearLayout(this).apply { orientation=1;setPadding(dp(22),dp(14),dp(22),dp(12)) }
-  val title=EditText(this).apply { hint="Ex.: Estudar para a prova";setSingleLine(true) }
+  val title=EditText(this).apply { hint="Ex.: Estudar para a prova";setSingleLine(true);setText(existing?.title ?: prefill) }
   layout.addView(title)
   val whenLabel=text("Data: selecione abaixo",15f,Color.DKGRAY)
   layout.addView(whenLabel)
@@ -89,12 +121,20 @@ class AgendaActivity : Activity() {
   layout.addView(text("Repetição",14f,Color.DKGRAY))
   val repeat=Spinner(this).apply { adapter=ArrayAdapter(this@AgendaActivity,android.R.layout.simple_spinner_dropdown_item,repeats) }
   layout.addView(repeat)
+  repeat.setSelection(intArrayOf(0,1,7,14,30).indexOf(existing?.everyDays ?: 0).coerceAtLeast(0))
   layout.addView(text("Lembrar com antecedência",14f,Color.DKGRAY))
   val options=arrayOf("Na hora","1 dia antes","2 dias antes","7 dias antes")
   val before=Spinner(this).apply { adapter=ArrayAdapter(this@AgendaActivity,android.R.layout.simple_spinner_dropdown_item,options);setSelection(2) }
   layout.addView(before)
-  val dialog=AlertDialog.Builder(this).setTitle("Novo compromisso").setView(ScrollView(this).apply { addView(layout) })
+  before.setSelection(intArrayOf(0,1,2,7).indexOf(existing?.beforeDays ?: 2).coerceAtLeast(0))
+  val dialog=AlertDialog.Builder(this).setTitle(if(existing==null)"Novo compromisso" else "Editar compromisso").setView(ScrollView(this).apply { addView(layout) })
    .setNegativeButton("Cancelar",null).setPositiveButton("Salvar",null).create()
+  if(existing!=null) dialog.setButton(AlertDialog.BUTTON_NEUTRAL,"Excluir") { _,_->
+   AlertDialog.Builder(this).setTitle("Excluir compromisso?").setMessage(existing.title)
+    .setNegativeButton("Cancelar",null).setPositiveButton("Excluir") { _,_->
+     ReminderScheduler.cancel(this,existing.id);events.delete(existing.id);showAgenda()
+    }.show()
+  }
   dialog.setOnShowListener {
    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
     val name=title.text.toString().trim()
@@ -104,7 +144,11 @@ class AgendaActivity : Activity() {
     }
     val every=intArrayOf(0,1,7,14,30)[repeat.selectedItemPosition]
     val days=intArrayOf(0,1,2,7)[before.selectedItemPosition]
-    val id=events.add(name,selected.timeInMillis,every,days)
+    val id=if(existing==null) events.add(name,selected.timeInMillis,every,days) else {
+     ReminderScheduler.cancel(this,existing.id)
+     events.update(existing.id,name,selected.timeInMillis,every,days)
+     existing.id
+    }
     ReminderScheduler.schedule(this,id)
     dialog.dismiss();showAgenda()
    }
