@@ -37,6 +37,33 @@ class MainActivity:Activity() {
   section("APARÊNCIA") { p ->
    p.addView(Switch(this).apply { text="Modo escuro AMOLED";setTextColor(fg);isChecked=dark;setOnCheckedChangeListener { _,value -> settings.edit().putBoolean("dark_mode",value).apply();recreate() } })
   }
+  section("ATIVAÇÃO POR VOZ") { p ->
+   p.addView(text("Diga Jarvis para chamar o assistente. O Android pode interromper a escuta em segundo plano.",13f))
+   p.addView(Switch(this).apply {
+    text="Ouvir a palavra Jarvis"
+    setTextColor(fg)
+    isChecked=settings.getBoolean("wake_enabled",false)
+    setOnCheckedChangeListener { _,enabled ->
+     if(enabled) {
+      if(Build.VERSION.SDK_INT>=23 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=android.content.pm.PackageManager.PERMISSION_GRANTED) {
+       isChecked=false
+       requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),302)
+      } else {
+       try {
+        startForegroundService(Intent(this@MainActivity,WakeWordService::class.java))
+        settings.edit().putBoolean("wake_enabled",true).apply()
+       } catch(e:Exception) {
+        isChecked=false
+        Toast.makeText(this@MainActivity,"Não foi possível iniciar a escuta: "+e.message,Toast.LENGTH_LONG).show()
+       }
+      }
+     } else {
+      stopService(Intent(this@MainActivity,WakeWordService::class.java))
+      settings.edit().putBoolean("wake_enabled",false).apply()
+     }
+    }
+   })
+  }
   section("INTELIGÊNCIA ARTIFICIAL") { p ->
    p.addView(text("Chave Groq",14f))
    val prefs=getSharedPreferences("groq",MODE_PRIVATE)
