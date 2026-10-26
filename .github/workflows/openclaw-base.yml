@@ -1,0 +1,56 @@
+name: JARVIS - OpenClaw Android experimental
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/openclaw-base.yml'
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout official OpenClaw (MIT)
+        uses: actions/checkout@v4
+        with:
+          repository: openclaw/openclaw
+          ref: main
+          persist-credentials: false
+          path: openclaw
+      - name: Setup Node and pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: openclaw/package.json
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: openclaw/.node-version
+          cache: pnpm
+          cache-dependency-path: openclaw/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" "platform-tools"
+      - name: Install workspace dependencies
+        working-directory: openclaw
+        run: pnpm install --frozen-lockfile
+      - name: Compile Android third-party debug app
+        working-directory: openclaw/apps/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleThirdPartyDebug
+      - name: Package APK and license
+        run: |
+          mkdir -p output
+          find openclaw/apps/android/app/build/outputs/apk -name '*.apk' -print -exec cp {} output/JARVIS-OpenClaw-experimental.apk \;
+          test -f output/JARVIS-OpenClaw-experimental.apk
+          cp openclaw/LICENSE output/OPENCLAW-LICENSE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-OpenClaw-experimental
+          path: output/
+          if-no-files-found: error
