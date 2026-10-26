@@ -1,0 +1,114 @@
+name: JARVIS OpenClaw local Gateway + Groq
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/jarvis-local-openclaw.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: mithun50/openclaw-termux
+          ref: main
+          path: base
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - name: Install Android SDK
+        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0"
+      - name: Customize JARVIS and add Groq onboarding
+        working-directory: base
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('flutter_app/lib/models/ai_provider.dart')
+          s=p.read_text()
+          marker='  /// All available AI providers.'
+          assert marker in s
+          groq="""  static const groq = AiProvider(
+            id: 'groq',
+            name: 'Groq',
+            description: 'Modelos rápidos com sua chave Groq',
+            icon: Icons.bolt,
+            color: Color(0xFFB4B4B4),
+            baseUrl: 'https://api.groq.com/openai/v1',
+            api: 'openai-completions',
+            defaultModels: [
+              'openai/gpt-oss-120b',
+              'openai/gpt-oss-20b',
+            ],
+            apiKeyHint: 'gsk_...',
+          );
+
+          """
+          s=s.replace(marker,groq+marker)
+          s=s.replace('  static const all = [','  static const all = [\n    groq,')
+          p.write_text(s)
+          p=Path('flutter_app/lib/app.dart')
+          s=p.read_text().replace("title: 'OpenClaw'","title: 'JARVIS'").replace('Color(0xFFDC2626)','Color(0xFF9FA8DA)').replace('Color(0xFF0A0A0A)','Color(0xFF000000)')
+          p.write_text(s)
+          # Após instalar o ambiente, mostrar configuração Groq em vez de onboarding terminal.
+          p=Path('flutter_app/lib/screens/setup_wizard_screen.dart')
+          s=p.read_text()
+          s="import '../models/ai_provider.dart';\nimport 'provider_detail_screen.dart';\n"+s
+          s=s.replace('OnboardingScreen(isFirstRun: true)',"ProviderDetailScreen(provider: AiProvider.groq)")
+          p.write_text(s)
+          # Traduzir as mensagens principais da primeira execução.
+          for name in ['setup_wizard_screen.dart','splash_screen.dart','provider_detail_screen.dart']:
+            p=Path('flutter_app/lib/screens')/name
+            s=p.read_text()
+            for a,b in {
+              'Setup OpenClaw':'Instalar JARVIS',
+              'Repair OpenClaw':'Reparar JARVIS',
+              'Loading...':'Carregando...',
+              'Checking setup status...':'Verificando instalação...',
+              'API key cannot be empty':'Digite sua chave Groq',
+              'Model name cannot be empty':'Selecione um modelo',
+              'Cancel':'Cancelar','Remove':'Remover','Save':'Salvar',
+              'configured and activated':'configurado e ativado',
+              'Failed to save:':'Falha ao salvar:',
+              'This will download Ubuntu, Node.js, and OpenClaw into a self-contained environment.':'O JARVIS instalará o OpenClaw e o Gateway no próprio celular. Requer internet e cerca de 500 MB livres.',
+            }.items():
+              s=s.replace(a,b)
+            p.write_text(s)
+          PY
+          grep -n 'ProviderDetailScreen\|OnboardingScreen' flutter_app/lib/screens/setup_wizard_screen.dart
+      - name: Fetch native PRoot libraries
+        working-directory: base
+        run: bash scripts/fetch-proot-binaries.sh
+      - name: Verify PRoot dependencies
+        working-directory: base
+        run: |
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            for lib in libproot.so libprootloader.so libtalloc.so libandroid-shmem.so; do
+              test -s "flutter_app/android/app/src/main/jniLibs/$abi/$lib"
+            done
+          done
+      - name: Flutter dependencies
+        working-directory: base/flutter_app
+        run: flutter pub get
+      - name: Build standalone Android APK
+        working-directory: base/flutter_app
+        run: flutter build apk --debug --target-platform android-arm64
+      - name: Upload APK with source attribution
+        run: |
+          mkdir -p output
+          cp base/flutter_app/build/app/outputs/flutter-apk/app-debug.apk output/JARVIS-OpenClaw-Groq-arm64.apk
+          cp base/LICENSE output/OPENCLAW-BASE-LICENSE.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-OpenClaw-Groq-arm64
+          path: output/
+          if-no-files-found: error
