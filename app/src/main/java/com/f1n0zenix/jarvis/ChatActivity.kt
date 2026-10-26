@@ -35,7 +35,7 @@ class ChatActivity:Activity() {
   val settings=label("⚙",27f,blue).apply { gravity=Gravity.CENTER;background=shape(if(dark) 0xFF292929.toInt() else 0xFFEDF4FF.toInt(),28);setOnClickListener { startActivity(Intent(this@ChatActivity,MainActivity::class.java)) } }
   header.addView(settings,LinearLayout.LayoutParams(dp(48),dp(48)))
   root.addView(header)
-  scroll=ScrollView(this).apply { fillViewport=true;clipToPadding=false }
+  scroll=ScrollView(this).apply { isFillViewport=true;clipToPadding=false }
   log=LinearLayout(this).apply { orientation=1;setPadding(dp(18),dp(22),dp(18),dp(18)) }
   scroll.addView(log);root.addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
   val composer=LinearLayout(this).apply { orientation=0;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(14),dp(8),dp(14),dp(8));background=shape(surface,32);elevation=dp(6).toFloat() }
