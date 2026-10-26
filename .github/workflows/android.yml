@@ -21,8 +21,8 @@ jobs:
       - name: Build APK
         run: gradle --no-daemon :app:assembleDebug
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/JARVIS release 0.6.0.apk"
+        run: cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/JARVIS release 0.7.0.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-release-0.6.0-debug
-          path: app/build/outputs/apk/debug/JARVIS release 0.6.0.apk
+          name: JARVIS-release-0.7.0-debug
+          path: app/build/outputs/apk/debug/JARVIS release 0.7.0.apk
