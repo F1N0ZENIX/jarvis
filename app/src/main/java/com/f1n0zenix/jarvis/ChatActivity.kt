@@ -19,7 +19,7 @@ class ChatActivity:Activity() {
  private lateinit var send:TextView
  private lateinit var input:EditText
  private lateinit var store:ChatStore
- private val dark by lazy { getSharedPreferences("settings",MODE_PRIVATE).getBoolean("dark_mode",false) }
+ private val dark by lazy { getSharedPreferences("settings",MODE_PRIVATE).getBoolean("dark_mode",true) }
  private val ink get()=if(dark) Color.WHITE else 0xFF142B3E.toInt()
  private val surface get()=if(dark) 0xFF1D1D1D.toInt() else Color.WHITE
  private val backdrop get()=if(dark) Color.BLACK else 0xFFF4F7FF.toInt()
@@ -58,6 +58,44 @@ class ChatActivity:Activity() {
   root.addView(wrap)
   setContentView(root)
   if(store.history(1).isEmpty()) welcome() else store.history(100).forEach { bubble(it.first,it.second) }
+  if(getSharedPreferences("groq",MODE_PRIVATE).getString("api_key","").isNullOrBlank()) showFirstRunSetup()
+ }
+ private fun showFirstRunSetup() {
+  val field=EditText(this).apply {
+   hint="gsk_..."
+   inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+   setSingleLine(true)
+   setPadding(dp(18),dp(12),dp(18),dp(12))
+  }
+  val box=LinearLayout(this).apply {
+   orientation=1
+   setPadding(dp(20),dp(8),dp(20),dp(4))
+   addView(TextView(this@ChatActivity).apply {
+    text="Bem-vindo ao JARVIS!\\n\\nO assistente funciona diretamente no Android, sem Gateway ou QR Code. Insira sua chave Groq para começar."
+    textSize=16f
+    setPadding(0,0,0,dp(16))
+   })
+   addView(field)
+  }
+  val dialog=android.app.AlertDialog.Builder(this)
+   .setTitle("Configurar Groq")
+   .setView(box)
+   .setPositiveButton("Salvar e começar",null)
+   .setNegativeButton("Mais tarde") { _,_-> }
+   .create()
+  dialog.setOnShowListener {
+   dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+    val key=field.text.toString().trim()
+    if(!key.startsWith("gsk_") || key.length<12) {
+     field.error="Insira uma chave Groq válida (gsk_...)"
+    } else {
+     getSharedPreferences("groq",MODE_PRIVATE).edit().putString("api_key",key).apply()
+     Toast.makeText(this,"Chave salva no aparelho",Toast.LENGTH_SHORT).show()
+     dialog.dismiss()
+    }
+   }
+  }
+  dialog.show()
  }
  private fun welcome() {
   log.addView(rowGap(42))
