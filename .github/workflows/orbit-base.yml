@@ -28,7 +28,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Brand experimental JARVIS APK
+      - name: Brand and localize experimental JARVIS APK
         working-directory: orbit
         run: |
           python3 - <<'PY'
@@ -39,6 +39,56 @@ jobs:
           p=Path("app/src/main/res/values/strings.xml")
           s=p.read_text().replace('<string name="app_name">Orbit Assistant</string>','<string name="app_name">JARVIS (Orbit Base)</string>')
           p.write_text(s)
+          PY
+          # Localização pt-BR das telas e mensagens mais frequentes.
+          python3 - <<'PY'
+          from pathlib import Path
+          translations={
+            "Ask anything...":"Pergunte qualquer coisa...",
+            "Response failed":"Falha na resposta",
+            "Retry":"Tentar novamente",
+            "Settings":"Configurações",
+            "AI Providers":"Provedores de IA",
+            "New chat":"Nova conversa",
+            "Chat history":"Histórico de conversas",
+            "History":"Histórico",
+            "Calendar":"Calendário",
+            "Reminders":"Lembretes",
+            "Alarms":"Alarmes",
+            "Notifications":"Notificações",
+            "Appearance":"Aparência",
+            "Dark mode":"Modo escuro",
+            "Light mode":"Modo claro",
+            "Save":"Salvar",
+            "Cancel":"Cancelar",
+            "Delete":"Excluir",
+            "Done":"Concluído",
+            "Continue":"Continuar",
+            "Back":"Voltar",
+            "Search":"Pesquisar",
+            "Send":"Enviar",
+            "Microphone":"Microfone",
+            "Voice":"Voz",
+            "Auto":"Automático",
+            "Not connected":"Não conectado",
+            "Connect":"Conectar",
+            "Connected":"Conectado",
+            "No conversations yet":"Nenhuma conversa ainda",
+            "Orbit could not finish this response: xAI rejected this request. Check the selected model and try again.":"O JARVIS não conseguiu responder: a xAI rejeitou a solicitação. Selecione um modelo configurado ou conecte outro provedor nas configurações.",
+          }
+          # Trocas exatas de literais de interface, sem modificar nomes de classes ou APIs.
+          root=Path("app/src/main")
+          changed=0
+          for p in list((root/"java").rglob("*.java"))+list((root/"res").rglob("*.xml")):
+            src=p.read_text(encoding="utf-8")
+            dst=src
+            for english,portuguese in translations.items():
+              dst=dst.replace('"'+english+'"','"'+portuguese+'"')
+              dst=dst.replace('>'+english+'</string>','>'+portuguese+'</string>')
+            if dst!=src:
+              p.write_text(dst,encoding="utf-8")
+              changed+=1
+          print("Arquivos localizados:",changed)
           PY
           chmod +x gradlew
       - name: Compile Orbit-based JARVIS
