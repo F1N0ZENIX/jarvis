@@ -65,7 +65,7 @@ class AgendaActivity : Activity() {
    root.addView(card)
    root.addView(gap(12))
   }
-  setContentView(ScrollView(this).apply { fillViewport=true;addView(root) })
+  setContentView(ScrollView(this).apply { isFillViewport=true;addView(root) })
  }
  private fun editEvent() {
   val now=Calendar.getInstance().apply { add(Calendar.HOUR_OF_DAY,1) }
