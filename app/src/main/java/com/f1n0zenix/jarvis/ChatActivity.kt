@@ -4,11 +4,16 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.os.Bundle\nimport android.speech.RecognizerIntent\nimport android.speech.tts.TextToSpeech\nimport java.util.Locale
+import android.os.Bundle
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.view.Gravity
 import android.view.View
 import android.widget.*
-class ChatActivity:Activity() {\n private var speaker:TextToSpeech?=null\n private var speakAnswers=false
+class ChatActivity:Activity() {
+ private var speaker:TextToSpeech?=null
+ private var speakAnswers=false
  private lateinit var log:LinearLayout
  private lateinit var scroll:ScrollView
  private lateinit var send:TextView
@@ -27,8 +32,10 @@ class ChatActivity:Activity() {\n private var speaker:TextToSpeech?=null\n priva
   super.onCreate(savedInstanceState)
   window.statusBarColor=surface;window.navigationBarColor=backdrop
   window.decorView.systemUiVisibility=if(dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)\n  window.decorView.setOnApplyWindowInsetsListener { view,insets -> view.setPadding(0,insets.systemWindowInsetTop,0,insets.systemWindowInsetBottom);insets }
-  store=ChatStore(this)\n  speaker=TextToSpeech(this) { status -> if(status==TextToSpeech.SUCCESS)speaker?.language=Locale("pt","BR") }
+  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+  window.decorView.setOnApplyWindowInsetsListener { view,insets -> view.setPadding(0,insets.systemWindowInsetTop,0,insets.systemWindowInsetBottom);insets }
+  store=ChatStore(this)
+  speaker=TextToSpeech(this) { status -> if(status==TextToSpeech.SUCCESS)speaker?.language=Locale("pt","BR") }
   val root=LinearLayout(this).apply { orientation=1;setBackgroundColor(backdrop) }
   val header=LinearLayout(this).apply { orientation=0;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(22),dp(14),dp(18),dp(14));setBackgroundColor(surface) }
   header.addView(label("JARVIS",24f).apply { typeface=Typeface.DEFAULT_BOLD },LinearLayout.LayoutParams(0,-2,1f))
