@@ -15,7 +15,7 @@ class MainActivity:Activity() {
  override fun onCreate(savedInstanceState:Bundle?) {
   super.onCreate(savedInstanceState)
   val settings=getSharedPreferences("settings",MODE_PRIVATE)
-  val dark=settings.getBoolean("dark_mode",false)
+  val dark=settings.getBoolean("dark_mode",true)
   val bg=if(dark)Color.BLACK else 0xFFF4F7FF.toInt()
   val card=if(dark)0xFF202020.toInt() else Color.WHITE
   val fg=if(dark)Color.WHITE else 0xFF142B3E.toInt()
@@ -27,7 +27,7 @@ class MainActivity:Activity() {
   window.decorView.systemUiVisibility=if(dark)0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
   val root=LinearLayout(this).apply { orientation=1;setPadding(dp(20),dp(22),dp(20),dp(32));setBackgroundColor(bg) }
   root.addView(text("Configurações",28f).apply { typeface=Typeface.DEFAULT_BOLD })
-  root.addView(text("JARVIS 0.8.0 • Assistente pessoal",13f))
+  root.addView(text("JARVIS 0.9.0 • Android nativo • Sem Gateway",13f))
   fun section(title:String,fill:(LinearLayout)->Unit) {
    root.addView(text(title,14f).apply { setTextColor(blue);typeface=Typeface.DEFAULT_BOLD })
    val panel=LinearLayout(this).apply { orientation=1;setPadding(dp(16),dp(12),dp(16),dp(12));background=shape(card) }
