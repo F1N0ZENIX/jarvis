@@ -18,11 +18,25 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Configure persistent signing
+        env:
+          JARVIS_KEYSTORE_BASE64: ${{ secrets.JARVIS_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$JARVIS_KEYSTORE_BASE64" ]; then
+            echo "$JARVIS_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/jarvis-release.jks"
+            echo "JARVIS_KEYSTORE_PATH=$RUNNER_TEMP/jarvis-release.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No persistent signing key: debug APK may not update previously installed APKs."
+          fi
       - name: Build APK
+        env:
+          JARVIS_KEYSTORE_PASSWORD: ${{ secrets.JARVIS_KEYSTORE_PASSWORD }}
+          JARVIS_KEY_ALIAS: ${{ secrets.JARVIS_KEY_ALIAS }}
+          JARVIS_KEY_PASSWORD: ${{ secrets.JARVIS_KEY_PASSWORD }}
         run: gradle --no-daemon :app:assembleDebug
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/JARVIS release 0.9.0.apk"
+        run: cp app/build/outputs/apk/debug/app-debug.apk "app/build/outputs/apk/debug/JARVIS release 0.9.1.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-release-0.9.0-debug
-          path: app/build/outputs/apk/debug/JARVIS release 0.9.0.apk
+          name: JARVIS-release-0.9.1-debug
+          path: app/build/outputs/apk/debug/JARVIS release 0.9.1.apk
