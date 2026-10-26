@@ -58,14 +58,13 @@ class WakeWordService : Service(), RecognitionListener {
    listening = false
    val launch = Intent(this, ChatActivity::class.java)
     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-   try { startActivity(launch) } catch(_: Exception) {
-    val open = PendingIntent.getActivity(this, 2, launch,
-     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    getSystemService(NotificationManager::class.java).notify(502,
-     Notification.Builder(this, channel).setSmallIcon(android.R.drawable.ic_btn_speak_now)
-      .setContentTitle("JARVIS ativado").setContentText("Toque para conversar")
-      .setContentIntent(open).setAutoCancel(true).build())
-   }
+   val open = PendingIntent.getActivity(this, 2, launch,
+    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+   getSystemService(NotificationManager::class.java).notify(502,
+    Notification.Builder(this, channel).setSmallIcon(android.R.drawable.ic_btn_speak_now)
+     .setContentTitle("JARVIS ativado").setContentText("Toque para conversar")
+     .setContentIntent(open).setAutoCancel(true).build())
+   try { startActivity(launch) } catch(_: Exception) {}
    stopSelf()
   }
  }
