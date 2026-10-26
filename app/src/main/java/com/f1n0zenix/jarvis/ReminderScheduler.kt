@@ -4,6 +4,14 @@ import android.content.*
 import android.os.Build
 import java.util.Calendar
 object ReminderScheduler {
+ fun cancel(context:Context,id:Int) {
+  val intent=Intent(context,ReminderReceiver::class.java)
+  val pi=PendingIntent.getBroadcast(context,id,intent,PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
+  if(pi!=null) {
+   context.getSystemService(AlarmManager::class.java).cancel(pi)
+   pi.cancel()
+  }
+ }
  fun schedule(context:Context,id:Int) {
   val event=AgendaStore(context).get(id)?:return
   val cal=Calendar.getInstance().apply { timeInMillis=event.start;add(Calendar.DAY_OF_YEAR,-event.beforeDays) }
