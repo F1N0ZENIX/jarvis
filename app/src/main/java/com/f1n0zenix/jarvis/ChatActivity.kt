@@ -143,13 +143,13 @@ class ChatActivity:Activity() {
  override fun onDestroy() { speaker?.stop();speaker?.shutdown();super.onDestroy() }
  private fun handleReminder(message:String):Boolean {
   val lower=message.lowercase(java.util.Locale("pt","BR"))
-  if(!Regex("""\\b(lembrete|lembre|marque|agende|agendar|compromisso)\\b""").containsMatchIn(lower)) return false
+  if(!Regex("""\b(lembrete|lembre|marque|agende|agendar|compromisso)\b""").containsMatchIn(lower)) return false
   val isTomorrow="amanhã" in lower || "amanha" in lower
   val isToday="hoje" in lower
-  val explicitDate=Regex("""\\b(\\d{1,2})/(\\d{1,2})(?:/(\\d{4}))?\\b""").find(lower)
+  val explicitDate=Regex("""\b(\d{1,2})/(\d{1,2})(?:/(\d{4}))?\b""").find(lower)
   if(!isTomorrow&&!isToday&&explicitDate==null) return false
-  val title=Regex("""(?i)\\b(?:com o nome|chamado|chamada|intitulado|intitulada)\\s+(.+)$""").find(message)?.groupValues?.get(1)?.trim()
-   ?: message.replace(Regex("""(?i)\\b(?:marque|crie|agende|um|uma|lembrete|para|me|amanhã|amanha|hoje|às|as|com|o|nome)\\b""")," ").trim().ifBlank { "Lembrete" }
+  val title=Regex("""(?i)\b(?:com o nome|chamado|chamada|intitulado|intitulada)\s+(.+)$""").find(message)?.groupValues?.get(1)?.trim()
+   ?: message.replace(Regex("""(?i)\b(?:marque|crie|agende|um|uma|lembrete|para|me|amanhã|amanha|hoje|às|as|com|o|nome)\b""")," ").trim().ifBlank { "Lembrete" }
   val cal=java.util.Calendar.getInstance().apply {
    if(isTomorrow)add(java.util.Calendar.DAY_OF_YEAR,1)
    if(explicitDate!=null) {
@@ -160,7 +160,7 @@ class ChatActivity:Activity() {
     set(year,month-1,day)
    }
   }
-  val time=Regex("""(?i)\\b(?:às|as|pelas)\\s*(\\d{1,2})(?:[:h](\\d{2}))?\\s*h?\\b""").find(lower)
+  val time=Regex("""(?i)\b(?:às|as|pelas)\s*(\d{1,2})(?:[:h](\d{2}))?\s*h?\b""").find(lower)
   val initialHour=time?.groupValues?.get(1)?.toIntOrNull()
   val initialMinute=time?.groupValues?.get(2)?.toIntOrNull()?:0
   if(initialHour!=null && initialHour !in 0..23)return false
@@ -175,13 +175,13 @@ class ChatActivity:Activity() {
     val id=AgendaStore(this).add(title,cal.timeInMillis,0,0)
     ReminderScheduler.schedule(this,id)
     val whenText=java.text.SimpleDateFormat("dd/MM/yyyy 'às' HH:mm",java.util.Locale("pt","BR")).format(cal.time)
-    val reply="Lembrete \\"$title\\" criado para $whenText. Você pode conferir na Agenda."
+    val reply="Lembrete \"$title\" criado para $whenText. Você pode conferir na Agenda."
     store.add("assistant",reply);bubble("assistant",reply)
    }
   }
   if(initialHour!=null) {
    android.app.AlertDialog.Builder(this).setTitle("Confirmar lembrete")
-    .setMessage("Criar \\"$title\\" para ${java.text.SimpleDateFormat("dd/MM/yyyy",java.util.Locale("pt","BR")).format(cal.time)} às ${"%02d:%02d".format(pickHour,pickMinute)}?")
+    .setMessage("Criar \"$title\" para ${java.text.SimpleDateFormat("dd/MM/yyyy",java.util.Locale("pt","BR")).format(cal.time)} às ${"%02d:%02d".format(pickHour,pickMinute)}?")
     .setNegativeButton("Cancelar",null).setPositiveButton("Criar") { _,_->save(pickHour,pickMinute) }.show()
   } else {
    android.app.TimePickerDialog(this,{ _,hour,minute ->save(hour,minute) },pickHour,pickMinute,true).apply {
